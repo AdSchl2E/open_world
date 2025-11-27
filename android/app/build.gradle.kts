@@ -5,6 +5,16 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+import java.util.Properties
+import java.io.FileInputStream
+
+// Charger les propriétés locales (contient la clé API Google Maps)
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localProperties.load(FileInputStream(localPropertiesFile))
+}
+
 android {
     namespace = "com.aschlee.openworld"
     compileSdk = flutter.compileSdkVersion
@@ -28,6 +38,9 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        
+        // Injecter la clé API Google Maps depuis local.properties
+        manifestPlaceholders["GOOGLE_MAPS_API_KEY"] = localProperties.getProperty("google.maps.api.key", "")
     }
 
     buildTypes {

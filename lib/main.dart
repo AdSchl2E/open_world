@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'screens/map_screen.dart';
 
-void main() => runApp(MyApp());
+Future<void> main() async {
+  await dotenv.load(fileName: ".env");
+  runApp(MyApp());
+}
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});

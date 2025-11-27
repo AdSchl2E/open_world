@@ -1,0 +1,12 @@
+# Android local.properties template
+# Copy this file to local.properties and add your actual values
+
+sdk.dir=/path/to/android/sdk
+flutter.sdk=/path/to/flutter/sdk
+flutter.buildMode=debug
+flutter.versionName=1.0.0
+flutter.versionCode=1
+
+# Google Maps API Key
+# Get your key from: https://console.cloud.google.com/google/maps-apis
+google.maps.api.key=YOUR_GOOGLE_MAPS_API_KEY_HERE

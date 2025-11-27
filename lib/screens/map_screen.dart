@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'dart:async';
 import 'dart:math';
@@ -19,7 +18,7 @@ class MapScreen extends StatefulWidget {
 }
 
 class _MapScreenState extends State<MapScreen> {
-  final MapController _mapController = MapController();
+  GoogleMapController? _mapController;
   final LocationService _locationService = LocationService();
   final DatabaseService _databaseService = DatabaseService();
   
@@ -28,12 +27,15 @@ class _MapScreenState extends State<MapScreen> {
   StreamSubscription<Position>? _positionStreamSubscription;
   
   bool _isLoading = true;
-  bool _isMapReady = false;
   double _explorationPercentage = 0.0;
   int _currentTab = 1; // 0: Paramètres, 1: Carte, 2: Stats
-  double _displayRadius = 1000.0; // Rayon d'affichage visuel (modifiable)
-  bool _testDataInitialized = false; // Pour ne créer les données de test qu'une fois
-  bool _isDarkFog = true; // true = nuages noirs, false = nuages blancs
+  double _displayRadius = 1000.0;
+  bool _testDataInitialized = false;
+  bool _isDarkFog = true;
+  
+  // État de la caméra Google Maps
+  LatLng _mapCenter = const LatLng(48.8566, 2.3522); // Paris par défaut
+  double _mapZoom = 15.0;
 
   @override
   void initState() {
@@ -319,15 +321,6 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
-  void _moveCameraToPosition(Position position) {
-    if (!_isMapReady) return; // Ne rien faire si la carte n'est pas prête
-    
-    _mapController.move(
-      LatLng(position.latitude, position.longitude),
-      15.0, // Niveau de zoom
-    );
-  }
-
   void _showPermissionDialog() {
     showDialog(
       context: context,
@@ -349,6 +342,7 @@ class _MapScreenState extends State<MapScreen> {
   @override
   void dispose() {
     _positionStreamSubscription?.cancel();
+    _mapController?.dispose();
     super.dispose();
   }
 
@@ -412,158 +406,99 @@ class _MapScreenState extends State<MapScreen> {
   Widget _buildMapView() {
     return Stack(
       children: [
-        // La carte OpenStreetMap
-        FlutterMap(
-            mapController: _mapController,
-            options: MapOptions(
-              initialCenter: _currentPosition != null
-                  ? LatLng(_currentPosition!.latitude, _currentPosition!.longitude)
-                  : const LatLng(48.8566, 2.3522), // Paris par défaut
-              initialZoom: 15.0,
-              minZoom: 3.0,
-              maxZoom: 18.0,
-              interactionOptions: const InteractionOptions(
-                flags: InteractiveFlag.all & ~InteractiveFlag.rotate, // Désactiver la rotation
-              ),
-              onMapEvent: (event) {
-                // Rebuilder le fog à chaque mouvement de caméra
-                // (pan, zoom, drag, etc.) pour que les zones restent alignées
-                setState(() {
-                  // Seulement le FogOfWarOverlay sera reconstruit
-                  // La carte elle-même n'est jamais rebuilt
-                });
-              },
-              onMapReady: () {
-                setState(() {
-                  _isMapReady = true;
-                });
-                // Déplacer la caméra maintenant que la carte est prête
-                if (_currentPosition != null) {
-                  _moveCameraToPosition(_currentPosition!);
-                }
-              },
-            ),
-            children: [
-              // Tuiles de carte OpenStreetMap - Version LÉGÈRE
-              
-              // // Option 2: CartoDB Voyager (TRÈS LÉGER, design minimaliste)
-              // TileLayer(
-              //   urlTemplate: 'https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-              //   userAgentPackageName: 'com.aschlee.openworld',
-              //   maxZoom: 19,
-              //   maxNativeZoom: 19, // Évite de charger des tuiles inexistantes
-              //   tileProvider: NetworkTileProvider(), // Cache automatique
-              //   keepBuffer: 2, // Garde 2 tuiles en buffer (réduit de 4 par défaut)
-              //   panBuffer: 1, // Réduit le buffer lors du pan (réduit de 2)
-              // ),
-              
-              // Option 3: CartoDB Positron (ULTRA LÉGER, noir et blanc)
-              TileLayer(
-                urlTemplate: 'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
-                userAgentPackageName: 'com.aschlee.openworld',
-                maxZoom: 19,
-              ),
-              
-              // Option 4: OSM Standard (celle que tu utilisais - LOURD)
-              // TileLayer(
-              //   urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-              //   userAgentPackageName: 'com.aschlee.openworld',
-              //   maxZoom: 19,
-              // ),
-              
-              // Marqueur de position actuelle
-              if (_currentPosition != null)
-                MarkerLayer(
-                  markers: [
-                    Marker(
-                      point: LatLng(
-                        _currentPosition!.latitude,
-                        _currentPosition!.longitude,
-                      ),
-                      width: 40,
-                      height: 40,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.blue.withOpacity(0.3),
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.blue, width: 3),
-                        ),
-                        child: const Center(
-                          child: Icon(
-                            Icons.circle,
-                            color: Colors.blue,
-                            size: 12,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-            ],
+        // Google Maps
+        GoogleMap(
+          onMapCreated: (controller) {
+            _mapController = controller;
+          },
+          initialCameraPosition: CameraPosition(
+            target: _currentPosition != null
+                ? LatLng(_currentPosition!.latitude, _currentPosition!.longitude)
+                : const LatLng(48.8566, 2.3522), // Paris par défaut
+            zoom: 15.0,
+            bearing: 0.0, // Orientation fixe vers le nord
           ),
-          
-          // Overlay de brouillard par-dessus la carte (avec trous aux zones explorées)
-          if (_isMapReady)
-            Positioned.fill(
-              child: IgnorePointer(
-                child: FogOfWarOverlay(
-                  exploredAreas: _exploredAreas,
-                  camera: _mapController.camera,
-                  isDarkTheme: _isDarkFog,
-                  playerPosition: _currentPosition,
-                  displayRadius: _displayRadius,
-                ),
-              ),
-            ),
-          
-          // Bouton de centrage en haut à droite (seulement sur la carte)
-          Positioned(
-            top: 60,
-            right: 16,
-            child: FloatingActionButton(
-              heroTag: 'center',
-              onPressed: () {
-                if (_currentPosition != null) {
-                  _moveCameraToPosition(_currentPosition!);
-                }
-              },
-              backgroundColor: _isDarkFog ? Colors.grey[850] : Colors.white,
-              child: Icon(
-                Icons.my_location, 
-                color: _isDarkFog ? Colors.white : Colors.blue,
-              ),
+          onCameraMove: (position) {
+            setState(() {
+              _mapCenter = position.target;
+              _mapZoom = position.zoom;
+            });
+          },
+          myLocationEnabled: true,
+          myLocationButtonEnabled: false,
+          zoomControlsEnabled: false,
+          mapType: MapType.normal,
+          rotateGesturesEnabled: false, // Désactiver la rotation
+          tiltGesturesEnabled: false,   // Désactiver l'inclinaison
+        ),
+        
+        // Overlay de fog of war
+        Positioned.fill(
+          child: IgnorePointer(
+            child: FogOfWarOverlay(
+              exploredAreas: _exploredAreas,
+              isDarkTheme: _isDarkFog,
+              playerPosition: _currentPosition,
+              displayRadius: _displayRadius,
+              mapZoom: _mapZoom,
+              mapCenter: _mapCenter,
             ),
           ),
-          
-          // Indicateur de progression en haut
-          Positioned(
-            top: 60,
-            left: 16,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: _isDarkFog ? Colors.black87 : Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
+        ),
+        
+        // Bouton de centrage
+        Positioned(
+          top: 60,
+          right: 16,
+          child: FloatingActionButton(
+            heroTag: 'center',
+            onPressed: () {
+              if (_currentPosition != null && _mapController != null) {
+                _mapController!.animateCamera(
+                  CameraUpdate.newLatLngZoom(
+                    LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+                    15.0,
                   ),
-                ],
-              ),
-              child: Text(
-                '${_explorationPercentage.toStringAsFixed(7)}%',
-                style: TextStyle(
-                  color: _isDarkFog ? Colors.white : Colors.black87,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
+                );
+              }
+            },
+            backgroundColor: _isDarkFog ? Colors.grey[850] : Colors.white,
+            child: Icon(
+              Icons.my_location, 
+              color: _isDarkFog ? Colors.white : Colors.blue,
+            ),
+          ),
+        ),
+        
+        // Indicateur de progression
+        Positioned(
+          top: 60,
+          left: 16,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: _isDarkFog ? Colors.black87 : Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
                 ),
+              ],
+            ),
+            child: Text(
+              '${_explorationPercentage.toStringAsFixed(7)}%',
+              style: TextStyle(
+                color: _isDarkFog ? Colors.white : Colors.black87,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
               ),
             ),
           ),
-        ],
-      );
+        ),
+      ],
+    );
   }
 
   Widget _buildFloatingNavBar() {
