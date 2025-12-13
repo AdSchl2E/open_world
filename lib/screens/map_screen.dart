@@ -28,8 +28,7 @@ class _MapScreenState extends State<MapScreen> {
   
   bool _isLoading = true;
   double _explorationPercentage = 0.0;
-  int _currentTab = 1; // 0: Paramètres, 1: Carte, 2: Stats
-  double _displayRadius = 1000.0;
+  int _currentTab = 1; // 0: Settings, 1: Map, 2: Stats
   bool _testDataInitialized = false;
   bool _isDarkFog = true;
   
@@ -46,11 +45,11 @@ class _MapScreenState extends State<MapScreen> {
   Future<void> _initializeApp() async {
     // Charger les zones explorées depuis la base de données
     _exploredAreas = await _databaseService.getAllExploredAreas();
-    print('🗺️ Zones explorées chargées: ${_exploredAreas.length}');
+    print('🗺️ Explored areas loaded: ${_exploredAreas.length}');
     
     // ⚠️ ZONES DE TEST - Créées une seule fois
     if (_exploredAreas.isEmpty && !_testDataInitialized) {
-      print('🧪 Initialisation des zones de test...');
+      print('🧪 Initializing test zones...');
       await _createTestZones();
       _testDataInitialized = true;
     }
@@ -66,9 +65,9 @@ class _MapScreenState extends State<MapScreen> {
     // Obtenir la position actuelle
     Position? position = await _locationService.getCurrentPosition();
     if (position != null) {
-      print('📍 Position actuelle: ${position.latitude}, ${position.longitude}');
+      print('📍 Current position: ${position.latitude}, ${position.longitude}');
       
-      // Ajouter immédiatement la position actuelle comme zone explorée
+      // Immediately add current position as explored area
       await _addExploredArea(position);
       
       setState(() {
@@ -106,13 +105,13 @@ class _MapScreenState extends State<MapScreen> {
       // on considère que c'est déjà exploré (pour éviter trop de chevauchement)
       if (distance < area.radius * 0.5) {
         isNewArea = false;
-        print('⚠️ Zone déjà explorée (distance: ${distance.toStringAsFixed(1)}m < ${(area.radius * 0.5).toStringAsFixed(1)}m)');
+        print('⚠️ Zone already explored (distance: ${distance.toStringAsFixed(1)}m < ${(area.radius * 0.5).toStringAsFixed(1)}m)');
         break;
       }
     }
 
     if (isNewArea) {
-      print('🆕 Nouvelle zone à ajouter!');
+      print('🆕 New zone to add!');
       _addExploredArea(position);
     }
   }
@@ -123,20 +122,22 @@ class _MapScreenState extends State<MapScreen> {
       longitude: position.longitude,
     );
     
-    print('✅ Nouvelle zone explorée ajoutée: ${position.latitude}, ${position.longitude}, rayon: 1000m');
+    print('✅ New explored area added: ${position.latitude}, ${position.longitude}, radius: 1000m');
     
     await _databaseService.insertExploredArea(newArea);
     setState(() {
       _exploredAreas.add(newArea);
-      _explorationPercentage = _exploredAreas.length / 510000000000 * 100;
+      // Surface terrestre uniquement (29% de la surface totale)
+      final surfaceTerrestre = 510000000000 * 0.29;
+      _explorationPercentage = _exploredAreas.length / surfaceTerrestre * 100;
     });
     
-    print('📊 Total zones explorées: ${_exploredAreas.length}');
+    print('📊 Total explored zones: ${_exploredAreas.length}');
   }
 
   Future<void> _createTestZones() async {
     const totalZones = 500;
-    print('🧪 Création de $totalZones zones de test (1 zone = 3.14km², espacement 500m)...');
+    print('🧪 Creating $totalZones test zones (1 zone = 3.14km², spacing 500m)...');
 
     final random = Random();
     int createdCount = 0;
@@ -157,7 +158,7 @@ class _MapScreenState extends State<MapScreen> {
       {'name': 'Hautepierre', 'lat': 48.5950, 'lng': 7.7000, 'count': 10, 'radius': 0.025},
       {'name': 'Cronenbourg', 'lat': 48.5850, 'lng': 7.7200, 'count': 10, 'radius': 0.02},
       {'name': 'Neuhof', 'lat': 48.5470, 'lng': 7.7550, 'count': 8, 'radius': 0.025},
-      // Villes périphériques (exploration occasionnelle)
+      // Peripheral cities (occasional exploration)
       {'name': 'Schiltigheim', 'lat': 48.6070, 'lng': 7.7500, 'count': 3, 'radius': 0.015},
       {'name': 'Lingolsheim', 'lat': 48.5580, 'lng': 7.6830, 'count': 8, 'radius': 0.015},
       {'name': 'Illkirch', 'lat': 48.5290, 'lng': 7.7200, 'count': 8, 'radius': 0.02},
@@ -165,7 +166,7 @@ class _MapScreenState extends State<MapScreen> {
       {'name': 'Kehl (Allemagne)', 'lat': 48.5706, 'lng': 7.8156, 'count': 14, 'radius': 0.02},
     ];
 
-    print('📍 STRASBOURG (40% - Ville natale)');
+    print('📍 STRASBOURG (40% - Hometown)');
     for (final zone in strasbourgZones) {
       await _generateZonesForArea(
         zone['name'] as String,
@@ -194,7 +195,7 @@ class _MapScreenState extends State<MapScreen> {
       {'name': 'Perrache', 'lat': 45.7490, 'lng': 4.8260, 'count': 5, 'radius': 0.01},
     ];
 
-    print('📍 LYON (30% - Études)');
+    print('📍 LYON (30% - Studies)');
     for (final zone in lyonZones) {
       await _generateZonesForArea(
         zone['name'] as String,
@@ -228,7 +229,7 @@ class _MapScreenState extends State<MapScreen> {
       {'name': 'Osaka Umeda', 'lat': 34.7024, 'lng': 135.4959, 'count': 4, 'radius': 0.015},
     ];
 
-    print('📍 JAPON (25% - Séjour actuel)');
+    print('📍 JAPAN (25% - Current stay)');
     for (final zone in japonZones) {
       await _generateZonesForArea(
         zone['name'] as String,
@@ -253,7 +254,7 @@ class _MapScreenState extends State<MapScreen> {
       {'name': 'Freiburg', 'lat': 47.9990, 'lng': 7.8421, 'count': 2, 'radius': 0.01},
     ];
 
-    print('📍 AUTRES (5% - Trajets & voyages)');
+    print('📍 OTHER (5% - Trips & travels)');
     for (final zone in autresZones) {
       await _generateZonesForArea(
         zone['name'] as String,
@@ -268,14 +269,16 @@ class _MapScreenState extends State<MapScreen> {
     }
 
     setState(() {
-      _explorationPercentage = _exploredAreas.length / 510000000000 * 100;
+      // Surface terrestre uniquement (29% de la surface totale)
+      final surfaceTerrestre = 510000000000 * 0.29;
+      _explorationPercentage = _exploredAreas.length / surfaceTerrestre * 100;
     });
 
-    print('✅ $createdCount zones de test créées - Votre parcours complet simulé !');
+    print('✅ $createdCount test zones created - Your complete journey simulated!');
     print('   🏠 Strasbourg: ~200 zones');
     print('   🎓 Lyon: ~150 zones');
-    print('   🇯🇵 Japon: ~125 zones');
-    print('   ✈️ Autres: ~25 zones');
+    print('   🇯🇵 Japan: ~125 zones');
+    print('   ✈️ Other: ~25 zones');
   }
 
   Future<void> _generateZonesForArea(
@@ -316,7 +319,7 @@ class _MapScreenState extends State<MapScreen> {
 
       // Log tous les 50 zones (ajusté pour 500 zones)
       if (currentCount % 50 == 0) {
-        print('      ⏳ $currentCount zones créées au total...');
+        print('      ⏳ $currentCount zones created in total...');
       }
     }
   }
@@ -362,12 +365,6 @@ class _MapScreenState extends State<MapScreen> {
           if (_currentTab == 0)
             SettingsScreen(
               exploredAreas: _exploredAreas,
-              displayRadius: _displayRadius,
-              onDisplayRadiusChanged: (newRadius) {
-                setState(() {
-                  _displayRadius = newRadius;
-                });
-              },
               isDarkFog: _isDarkFog,
               onFogThemeChanged: (isDark) {
                 setState(() {
@@ -378,7 +375,9 @@ class _MapScreenState extends State<MapScreen> {
                 final areas = await _databaseService.getAllExploredAreas();
                 setState(() {
                   _exploredAreas = areas;
-                  _explorationPercentage = areas.length / 510000000000 * 100;
+                  // Land surface only (29% of total surface)
+                  final surfaceTerrestre = 510000000000 * 0.29;
+                  _explorationPercentage = areas.length / surfaceTerrestre * 100;
                 });
               },
             )
@@ -439,7 +438,7 @@ class _MapScreenState extends State<MapScreen> {
               exploredAreas: _exploredAreas,
               isDarkTheme: _isDarkFog,
               playerPosition: _currentPosition,
-              displayRadius: _displayRadius,
+              displayRadius: 1000.0,
               mapZoom: _mapZoom,
               mapCenter: _mapCenter,
             ),
@@ -487,13 +486,18 @@ class _MapScreenState extends State<MapScreen> {
                 ),
               ],
             ),
-            child: Text(
-              '${_explorationPercentage.toStringAsFixed(7)}%',
-              style: TextStyle(
-                color: _isDarkFog ? Colors.white : Colors.black87,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '${_explorationPercentage.toStringAsFixed(9)}%',
+                  style: TextStyle(
+                    color: _isDarkFog ? Colors.white : Colors.black87,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -520,13 +524,13 @@ class _MapScreenState extends State<MapScreen> {
         children: [
           _buildNavButton(
             icon: Icons.settings,
-            label: 'Réglages',
+            label: 'Settings',
             isSelected: _currentTab == 0,
             onTap: () => setState(() => _currentTab = 0),
           ),
           _buildNavButton(
             icon: Icons.map,
-            label: 'Carte',
+            label: 'Map',
             isSelected: _currentTab == 1,
             onTap: () => setState(() => _currentTab = 1),
           ),

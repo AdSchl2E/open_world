@@ -17,7 +17,7 @@ class DatabaseService {
 
   Future<Database> _initDatabase() async {
     String path = join(await getDatabasesPath(), 'openworld.db');
-    print('💾 Base de données: $path');
+    print('💾 Database: $path');
     return await openDatabase(
       path,
       version: 2, // Incrémenté pour migration
@@ -30,12 +30,12 @@ class DatabaseService {
             timestamp TEXT NOT NULL
           )
         ''');
-        print('✨ Table explored_areas créée (sans colonne radius)');
+        print('✨ Table explored_areas created (without radius column)');
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) {
           // Migration: supprimer la colonne radius si elle existe
-          print('🔄 Migration v$oldVersion -> v$newVersion: suppression de la colonne radius');
+          print('🔄 Migration v$oldVersion -> v$newVersion: removing radius column');
           await db.execute('ALTER TABLE explored_areas DROP COLUMN radius');
         }
       },

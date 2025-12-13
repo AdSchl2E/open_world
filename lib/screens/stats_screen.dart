@@ -28,7 +28,7 @@ class StatsScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: _backgroundColor,
       appBar: AppBar(
-        title: Text('Statistiques'),
+        title: Text('Statistics'),
         backgroundColor: isDarkFog ? Colors.black87 : Colors.white,
         foregroundColor: isDarkFog ? Colors.white : Colors.black87,
         elevation: 0,
@@ -41,32 +41,20 @@ class StatsScreen extends StatelessWidget {
           
           const SizedBox(height: 16),
           
-          // Section Général
-          _buildSectionTitle('Général'),
+          // General section
+          _buildSectionTitle('General'),
           _buildStatsGrid([
-            _StatItem('Zones explorées', '${exploredAreas.length}', Icons.explore),
-            _StatItem('Surface couverte', '${stats['totalArea']} km²', Icons.area_chart),
+            _StatItem('Explored zones', '${exploredAreas.length}', Icons.explore),
+            _StatItem('Covered area', '${stats['totalArea']} km²', Icons.area_chart),
           ]),
           
           const SizedBox(height: 24),
           
-          // Section Par région (placeholder)
-          _buildSectionTitle('Par région'),
-          _buildRegionCard('France', 0.001, 3),
-          const SizedBox(height: 12),
-          _buildRegionCard('Europe', 0.0001, 3),
-          const SizedBox(height: 12),
-          _buildRegionCard('Monde', 0.00001, 3),
-          
-          const SizedBox(height: 24),
-          
-          // Section Records
+          // Records section
           _buildSectionTitle('Records'),
           _buildStatsGrid([
-            _StatItem('Plus vieux', _getOldestDate(), Icons.history),
-            _StatItem('Plus récent', _getNewestDate(), Icons.access_time),
-            _StatItem('Aujourd\'hui', '${stats['today']}', Icons.today),
-            _StatItem('Cette semaine', '${stats['thisWeek']}', Icons.calendar_today),
+            _StatItem('Today', '${stats['today']}', Icons.today),
+            _StatItem('This week', '${stats['thisWeek']}', Icons.calendar_today),
           ]),
           
           const SizedBox(height: 24),
@@ -76,7 +64,8 @@ class StatsScreen extends StatelessWidget {
   }
 
   Widget _buildProgressCard(Map<String, dynamic> stats) {
-    final percentage = stats['percentage'] as double;
+    final percentageLand = stats['percentageLand'] as double;
+    final percentageTotal = stats['percentageTotal'] as double;
     
     return Card(
       color: _cardColor,
@@ -87,7 +76,7 @@ class StatsScreen extends StatelessWidget {
         child: Column(
           children: [
             Text(
-              'Progression mondiale',
+              'Global Progress',
               style: TextStyle(
                 color: _textColorSecondary,
                 fontSize: 16,
@@ -96,16 +85,16 @@ class StatsScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              '${(percentage * 100).toStringAsFixed(5)}%',
+              '${(percentageLand * 100).toStringAsFixed(9)}%',
               style: const TextStyle(
                 color: Colors.blueAccent,
                 fontSize: 48,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             LinearProgressIndicator(
-              value: percentage,
+              value: percentageLand,
               backgroundColor: isDarkFog ? Colors.grey[700] : Colors.grey[300],
               color: Colors.blueAccent,
               minHeight: 8,
@@ -113,10 +102,18 @@ class StatsScreen extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              '${exploredAreas.length} zones explorées',
+              '${exploredAreas.length} zones explored',
               style: TextStyle(
                 color: _textColorSecondary,
                 fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'With oceans: ${(percentageTotal * 100).toStringAsFixed(9)}%',
+              style: TextStyle(
+                color: _textColorSecondary,
+                fontSize: 11,
               ),
             ),
           ],
@@ -203,7 +200,7 @@ class StatsScreen extends StatelessWidget {
           ),
         ),
         subtitle: Text(
-          '$zones zones explorées',
+          '$zones zones explored',
           style: TextStyle(color: _textColorSecondary, fontSize: 13),
         ),
         trailing: Text(
@@ -248,8 +245,14 @@ class StatsScreen extends StatelessWidget {
       return diff.inDays < 7;
     }).length;
 
+    // Calcul des pourcentages
+    final surfaceTerrestre = 510000000000 * 0.29; // 29% de la surface totale
+    final percentageLand = exploredAreas.length / surfaceTerrestre;
+    final percentageTotal = exploredAreas.length / 510000000000;
+
     return {
-      'percentage': exploredAreas.length / 510000000000 * 100,
+      'percentageLand': percentageLand,
+      'percentageTotal': percentageTotal,
       'totalArea': totalAreaKm2,
       'today': today,
       'thisWeek': thisWeek,

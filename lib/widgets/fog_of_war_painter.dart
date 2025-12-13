@@ -24,57 +24,73 @@ class FogOfWarPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Utiliser saveLayer pour gérer correctement la transparence
+    // Dessiner le fog avec un effet de bords doux et nuageux
     canvas.saveLayer(Rect.fromLTWH(0, 0, size.width, size.height), Paint());
     
-    // Fond sombre ou blanc sur toute la surface
+    // Fond sombre ou blanc sur toute la surface avec opacité
     final fogPaint = Paint()
       ..color = isDarkTheme 
-          ? Colors.black.withOpacity(0.7)
-          : Colors.white.withOpacity(0.7);
+          ? Colors.black.withOpacity(0.75)
+          : Colors.white.withOpacity(0.75);
     
     canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), fogPaint);
 
-    // Paint pour les cercles transparents (révèle la carte)
-    final clearPaint = Paint()
-      ..blendMode = BlendMode.clear
-      ..style = PaintingStyle.fill;
-
-    // Dessiner les cercles pour les zones explorées
+    // Créer la liste de toutes les zones à révéler (explorées + position actuelle)
+    final List<_CircleData> circlesToDraw = [];
+    
+    // Ajouter toutes les zones explorées
     for (final area in exploredAreas) {
       final areaLatLng = LatLng(area.latitude, area.longitude);
       final point = _latLngToScreenPoint(areaLatLng, mapCenter, mapZoom, size);
       final radiusPixels = _metersToPixels(displayRadius, area.latitude, mapZoom);
-      
-      canvas.drawCircle(
-        Offset(point.dx, point.dy),
-        radiusPixels,
-        clearPaint,
-      );
+      circlesToDraw.add(_CircleData(point, radiusPixels));
     }
 
-    // Dessiner le cercle pour la position actuelle
+    // Ajouter la position actuelle
     if (playerPosition != null) {
       final playerLatLng = LatLng(playerPosition!.latitude, playerPosition!.longitude);
       final point = _latLngToScreenPoint(playerLatLng, mapCenter, mapZoom, size);
       final radiusPixels = _metersToPixels(displayRadius, playerPosition!.latitude, mapZoom);
-      
-      canvas.drawCircle(
-        Offset(point.dx, point.dy),
-        radiusPixels,
-        clearPaint,
+      circlesToDraw.add(_CircleData(point, radiusPixels));
+    }
+
+    // Dessiner tous les cercles avec le même effet nuageux
+    for (final circle in circlesToDraw) {
+      final gradient = RadialGradient(
+        colors: [
+          Colors.white,                      // Centre complètement visible
+          Colors.white,                      // Zone claire
+          Colors.white.withOpacity(0.98),
+          Colors.white.withOpacity(0.92),
+          Colors.white.withOpacity(0.80),
+          Colors.white.withOpacity(0.60),
+          Colors.white.withOpacity(0.35),
+          Colors.white.withOpacity(0.15),
+          Colors.white.withOpacity(0.05),
+          Colors.transparent,                // Bord extérieur qui se fond
+        ],
+        stops: const [0.0, 0.45, 0.60, 0.70, 0.77, 0.83, 0.88, 0.93, 0.97, 1.0],
       );
+      
+      final softPaint = Paint()
+        ..shader = gradient.createShader(Rect.fromCircle(
+          center: circle.center,
+          radius: circle.radius * 1.25,
+        ))
+        ..blendMode = BlendMode.dstOut;
+      
+      canvas.drawCircle(circle.center, circle.radius * 1.25, softPaint);
     }
     
     canvas.restore();
   }
 
   Offset _latLngToScreenPoint(LatLng position, LatLng center, double zoom, Size size) {
-    // Utiliser la projection Web Mercator (EPSG:3857)
+    // Use Web Mercator projection (EPSG:3857)
     const double worldSize = 256.0;
     final double scale = worldSize * math.pow(2, zoom);
     
-    // Convertir les coordonnées géographiques en coordonnées de pixels Web Mercator
+    // Convert geographic coordinates to Web Mercator pixel coordinates
     final double posX = (position.longitude + 180.0) / 360.0 * scale;
     final double latRad = position.latitude * math.pi / 180.0;
     final double posY = (1.0 - math.log(math.tan(latRad) + 1.0 / math.cos(latRad)) / math.pi) / 2.0 * scale;
@@ -99,12 +115,19 @@ class FogOfWarPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(FogOfWarPainter oldDelegate) {
+    // Check if position changed by comparing coordinates
+    final positionChanged = playerPosition != null && oldDelegate.playerPosition != null
+        ? (playerPosition!.latitude != oldDelegate.playerPosition!.latitude ||
+           playerPosition!.longitude != oldDelegate.playerPosition!.longitude)
+        : playerPosition != oldDelegate.playerPosition;
+    
     return exploredAreas.length != oldDelegate.exploredAreas.length ||
            isDarkTheme != oldDelegate.isDarkTheme ||
-           playerPosition != oldDelegate.playerPosition ||
+           positionChanged ||
            displayRadius != oldDelegate.displayRadius ||
            mapZoom != oldDelegate.mapZoom ||
-           mapCenter != oldDelegate.mapCenter;
+           mapCenter.latitude != oldDelegate.mapCenter.latitude ||
+           mapCenter.longitude != oldDelegate.mapCenter.longitude;
   }
 }
 
@@ -141,4 +164,12 @@ class FogOfWarOverlay extends StatelessWidget {
       child: Container(),
     );
   }
+}
+
+// Helper class to store circle data
+class _CircleData {
+  final Offset center;
+  final double radius;
+  
+  _CircleData(this.center, this.radius);
 }
