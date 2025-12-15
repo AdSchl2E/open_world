@@ -5,7 +5,7 @@ class LocationService {
   factory LocationService() => _instance;
   LocationService._internal();
 
-  Future<bool> checkPermissions() async {
+  Future<bool> checkPermissions({bool requestIfNeeded = true}) async {
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       return false;
@@ -13,8 +13,14 @@ class LocationService {
 
     LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
+      if (requestIfNeeded) {
+        // Only request permission if we're in foreground (has UI)
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          return false;
+        }
+      } else {
+        // Background mode: can't request, just return false
         return false;
       }
     }
@@ -41,7 +47,8 @@ class LocationService {
     return Geolocator.getPositionStream(
       locationSettings: const LocationSettings(
         accuracy: LocationAccuracy.high,
-        distanceFilter: 10, // mise à jour tous les 10 mètres
+        distanceFilter: 50, // Update every 50 meters (better battery)
+        timeLimit: Duration(minutes: 5), // Timeout after 5 minutes
       ),
     );
   }

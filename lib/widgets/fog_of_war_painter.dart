@@ -18,7 +18,7 @@ class FogOfWarPainter extends CustomPainter {
     this.isDarkTheme = true,
     this.playerPosition,
     this.displayRadius = 1000.0,
-    this.mapZoom = 15.0,
+    this.mapZoom = 14.0,
     required this.mapCenter,
   });
 
@@ -35,41 +35,76 @@ class FogOfWarPainter extends CustomPainter {
     
     canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), fogPaint);
 
+    // Définir la zone visible avec padding pour éviter de dessiner hors écran
+    final visibleRect = Rect.fromLTWH(-size.width * 0.2, -size.height * 0.2, 
+                                      size.width * 1.4, size.height * 1.4);
+    
     // Créer la liste de toutes les zones à révéler (explorées + position actuelle)
     final List<_CircleData> circlesToDraw = [];
     
-    // Ajouter toutes les zones explorées
+    // Calculer les seuils pour adapter la taille des zones au dézoom
+    final minRadiusPixels = size.width * 0.001;
+    final minRadiusPixels2 = minRadiusPixels / 3.0; // 3 fois plus petit
+    
+    // Ajouter toutes les zones explorées (avec culling optimisé)
     for (final area in exploredAreas) {
       final areaLatLng = LatLng(area.latitude, area.longitude);
       final point = _latLngToScreenPoint(areaLatLng, mapCenter, mapZoom, size);
-      final radiusPixels = _metersToPixels(displayRadius, area.latitude, mapZoom);
-      circlesToDraw.add(_CircleData(point, radiusPixels));
+      
+      // Culling: ignorer les zones hors écran
+      double radiusPixels = _metersToPixels(displayRadius, area.latitude, mapZoom);
+      
+      // Adaptation de la taille selon le niveau de zoom
+      if (radiusPixels < minRadiusPixels2) {
+        // Très petit: multiplier par 50
+        radiusPixels *= 50.0;
+      } else if (radiusPixels < minRadiusPixels) {
+        // Petit: multiplier par 10
+        radiusPixels *= 10.0;
+      }
+      
+      // Check si dans la zone visible (avec radius)
+      if (visibleRect.inflate(radiusPixels * 1.25).contains(point)) {
+        circlesToDraw.add(_CircleData(point, radiusPixels));
+      }
     }
 
     // Ajouter la position actuelle
     if (playerPosition != null) {
       final playerLatLng = LatLng(playerPosition!.latitude, playerPosition!.longitude);
       final point = _latLngToScreenPoint(playerLatLng, mapCenter, mapZoom, size);
-      final radiusPixels = _metersToPixels(displayRadius, playerPosition!.latitude, mapZoom);
+      double radiusPixels = _metersToPixels(displayRadius, playerPosition!.latitude, mapZoom);
+      
+      // Adaptation de la taille selon le niveau de zoom
+      if (radiusPixels < minRadiusPixels2) {
+        radiusPixels *= 5.0;
+      } else if (radiusPixels < minRadiusPixels) {
+        radiusPixels *= 2.0;
+      }
+      
       circlesToDraw.add(_CircleData(point, radiusPixels));
     }
 
-    // Dessiner tous les cercles avec le même effet nuageux
+    // Optimisation: réutiliser le gradient et le paint
+    final gradientStops = const [0.0, 0.45, 0.60, 0.70, 0.77, 0.83, 0.88, 0.93, 0.97, 1.0];
+    final gradientColors = [
+      Colors.white,
+      Colors.white,
+      Colors.white.withOpacity(0.98),
+      Colors.white.withOpacity(0.92),
+      Colors.white.withOpacity(0.80),
+      Colors.white.withOpacity(0.60),
+      Colors.white.withOpacity(0.35),
+      Colors.white.withOpacity(0.15),
+      Colors.white.withOpacity(0.05),
+      Colors.transparent,
+    ];
+    
+    // Dessiner tous les cercles
     for (final circle in circlesToDraw) {
       final gradient = RadialGradient(
-        colors: [
-          Colors.white,                      // Centre complètement visible
-          Colors.white,                      // Zone claire
-          Colors.white.withOpacity(0.98),
-          Colors.white.withOpacity(0.92),
-          Colors.white.withOpacity(0.80),
-          Colors.white.withOpacity(0.60),
-          Colors.white.withOpacity(0.35),
-          Colors.white.withOpacity(0.15),
-          Colors.white.withOpacity(0.05),
-          Colors.transparent,                // Bord extérieur qui se fond
-        ],
-        stops: const [0.0, 0.45, 0.60, 0.70, 0.77, 0.83, 0.88, 0.93, 0.97, 1.0],
+        colors: gradientColors,
+        stops: gradientStops,
       );
       
       final softPaint = Paint()
@@ -146,7 +181,7 @@ class FogOfWarOverlay extends StatelessWidget {
     this.isDarkTheme = true,
     this.playerPosition,
     this.displayRadius = 1000.0,
-    this.mapZoom = 15.0,
+    this.mapZoom = 14.0,
     required this.mapCenter,
   });
 
