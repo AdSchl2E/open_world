@@ -1,12 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Modify this file to customize your launch splash screen -->
+<!-- Splash screen with app logo (Android 5+) -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="?android:colorBackground" />
-
-    <!-- You can insert your own image assets here -->
-    <!-- <item>
+    <!-- Background color -->
+    <item android:drawable="@color/ic_launcher_background" />
+    
+    <!-- Subtle gradient overlay -->
+    <item>
+        <shape>
+            <gradient
+                android:type="radial"
+                android:gradientRadius="50%p"
+                android:centerColor="#1f1f3a"
+                android:endColor="@color/ic_launcher_background" />
+        </shape>
+    </item>
+    
+    <!-- App logo centered -->
+    <item>
         <bitmap
             android:gravity="center"
-            android:src="@mipmap/launch_image" />
-    </item> -->
+            android:src="@mipmap/ic_launcher" />
+    </item>
 </layer-list>

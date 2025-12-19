@@ -69,20 +69,38 @@ class FogOfWarPainter extends CustomPainter {
       }
     }
 
-    // Ajouter la position actuelle
+    // Ajouter la position actuelle seulement si pas déjà couverte
     if (playerPosition != null) {
-      final playerLatLng = LatLng(playerPosition!.latitude, playerPosition!.longitude);
-      final point = _latLngToScreenPoint(playerLatLng, mapCenter, mapZoom, size);
-      double radiusPixels = _metersToPixels(displayRadius, playerPosition!.latitude, mapZoom);
-      
-      // Adaptation de la taille selon le niveau de zoom
-      if (radiusPixels < minRadiusPixels2) {
-        radiusPixels *= 5.0;
-      } else if (radiusPixels < minRadiusPixels) {
-        radiusPixels *= 2.0;
+      // Vérifier si la position actuelle est déjà dans une zone existante
+      bool isAlreadyCovered = false;
+      for (final area in exploredAreas) {
+        final distance = _calculateDistance(
+          playerPosition!.latitude,
+          playerPosition!.longitude,
+          area.latitude,
+          area.longitude,
+        );
+        if (distance < 500.0) {
+          isAlreadyCovered = true;
+          break;
+        }
       }
       
-      circlesToDraw.add(_CircleData(point, radiusPixels));
+      // Afficher uniquement si pas déjà couverte
+      if (!isAlreadyCovered) {
+        final playerLatLng = LatLng(playerPosition!.latitude, playerPosition!.longitude);
+        final point = _latLngToScreenPoint(playerLatLng, mapCenter, mapZoom, size);
+        double radiusPixels = _metersToPixels(displayRadius, playerPosition!.latitude, mapZoom);
+        
+        // Adaptation de la taille selon le niveau de zoom
+        if (radiusPixels < minRadiusPixels2) {
+          radiusPixels *= 5.0;
+        } else if (radiusPixels < minRadiusPixels) {
+          radiusPixels *= 2.0;
+        }
+        
+        circlesToDraw.add(_CircleData(point, radiusPixels));
+      }
     }
 
     // Optimisation: réutiliser le gradient et le paint
@@ -146,6 +164,19 @@ class FogOfWarPainter extends CustomPainter {
     final latRad = latitude * math.pi / 180;
     final metersPerPixel = (2 * math.pi * earthRadius * math.cos(latRad)) / (256 * math.pow(2, zoom));
     return meters / metersPerPixel;
+  }
+
+  double _calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+    const double earthRadius = 6378137.0;
+    final dLat = (lat2 - lat1) * math.pi / 180.0;
+    final dLon = (lon2 - lon1) * math.pi / 180.0;
+    
+    final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(lat1 * math.pi / 180.0) * math.cos(lat2 * math.pi / 180.0) *
+        math.sin(dLon / 2) * math.sin(dLon / 2);
+    
+    final c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
+    return earthRadius * c;
   }
 
   @override

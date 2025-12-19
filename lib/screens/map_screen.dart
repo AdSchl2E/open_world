@@ -65,8 +65,8 @@ class _MapScreenState extends State<MapScreen> {
     if (position != null) {
       print('📍 Current position: ${position.latitude}, ${position.longitude}');
       
-      // Immediately add current position as explored area
-      await _addExploredArea(position);
+      // Check and add current position as explored area (only if new)
+      _checkAndAddNewArea(position);
       
       setState(() {
         _currentPosition = position;

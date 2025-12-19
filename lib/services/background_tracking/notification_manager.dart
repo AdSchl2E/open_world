@@ -38,7 +38,7 @@ class NotificationManager {
   /// Initializes notifications with icon
   Future<void> initialize() async {
     const AndroidInitializationSettings androidSettings = 
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+        AndroidInitializationSettings('@drawable/ic_notification');
     
     await _notifications.initialize(
       const InitializationSettings(android: androidSettings),
@@ -61,7 +61,7 @@ class NotificationManager {
       usesChronometer: false,
       visibility: NotificationVisibility.public,
       category: AndroidNotificationCategory.service,
-      icon: '@mipmap/ic_launcher',
+      icon: '@drawable/ic_notification',
     );
 
     await _notifications.show(

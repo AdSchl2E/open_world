@@ -48,7 +48,7 @@ class LocationService {
       locationSettings: const LocationSettings(
         accuracy: LocationAccuracy.high,
         distanceFilter: 50, // Update every 50 meters (better battery)
-        timeLimit: Duration(minutes: 5), // Timeout after 5 minutes
+        // No timeLimit: tracking continu sans timeout
       ),
     );
   }

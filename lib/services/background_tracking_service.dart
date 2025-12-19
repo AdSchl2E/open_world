@@ -1,4 +1,5 @@
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:math' as math;
 import 'background_tracking/service_configuration.dart';
 import 'background_tracking/background_storage.dart';
 import 'database_service.dart';
@@ -27,22 +28,60 @@ class BackgroundTrackingService {
       final pending = await BackgroundStorage.getPendingPositions();
       print('🔄 Syncing ${pending.length} background positions to database');
       
+      // Charger les zones existantes pour vérification
+      final existingAreas = await _databaseService.getAllExploredAreas();
+      
+      int added = 0;
+      int skipped = 0;
+      
       for (var pos in pending) {
         try {
-          await _databaseService.insertExploredArea(
-            ExploredArea(
-              latitude: pos['latitude'] as double,
-              longitude: pos['longitude'] as double,
-            ),
-          );
+          final lat = pos['latitude'] as double;
+          final lon = pos['longitude'] as double;
+          
+          // Vérifier si déjà couvert par une zone existante
+          bool isAlreadyCovered = false;
+          for (var area in existingAreas) {
+            final distance = _calculateDistance(lat, lon, area.latitude, area.longitude);
+            if (distance < 500.0) {
+              isAlreadyCovered = true;
+              skipped++;
+              break;
+            }
+          }
+          
+          // Ajouter uniquement si pas déjà couvert
+          if (!isAlreadyCovered) {
+            await _databaseService.insertExploredArea(
+              ExploredArea(latitude: lat, longitude: lon),
+            );
+            // Ajouter à la liste locale pour les vérifications suivantes
+            existingAreas.add(ExploredArea(latitude: lat, longitude: lon));
+            added++;
+          }
         } catch (e) {
           print('⚠️ Error syncing position: $e');
         }
       }
       
       await BackgroundStorage.clearPendingPositions();
-      print('✅ Background positions synced');
+      print('✅ Background positions synced: $added added, $skipped skipped');
     }
+  }
+  
+  double _calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+    // Formule de Haversine
+    const double earthRadius = 6378137.0;
+    final dLat = (lat2 - lat1) * math.pi / 180.0;
+    final dLon = (lon2 - lon1) * math.pi / 180.0;
+    
+    final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(lat1 * math.pi / 180.0) * 
+        math.cos(lat2 * math.pi / 180.0) *
+        math.sin(dLon / 2) * math.sin(dLon / 2);
+    
+    final c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
+    return earthRadius * c;
   }
 
   /// Starts tracking automatically if user had enabled it
