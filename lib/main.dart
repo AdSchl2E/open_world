@@ -3,12 +3,18 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'screens/map_screen.dart';
 import 'services/background_tracking_service.dart';
 import 'services/location_service.dart';
+import 'services/background_tracking/notification_manager.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
   // Load environment variables
   await dotenv.load(fileName: ".env");
+  
+  // Initialize flutter_local_notifications in main isolate
+  final notificationManager = NotificationManager();
+  await notificationManager.initialize();
+  await notificationManager.createChannel();
   
   // Initialize background tracking service
   await BackgroundTrackingService().initialize();

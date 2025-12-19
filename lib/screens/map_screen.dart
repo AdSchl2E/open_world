@@ -184,7 +184,7 @@ class _MapScreenState extends State<MapScreen> {
                   _mapController!.animateCamera(
                     CameraUpdate.newLatLngZoom(
                       LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
-                      15.0,
+                      14.0,
                     ),
                   );
                 }

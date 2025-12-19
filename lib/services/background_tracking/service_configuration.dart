@@ -18,6 +18,9 @@ class ServiceConfiguration {
   Future<void> _ensureConfigured() async {
     if (_isConfigured) return;
 
+    // Initialize flutter_local_notifications in main isolate BEFORE starting service
+    await _notificationManager.initialize();
+
     final service = FlutterBackgroundService();
 
     // Configure background service

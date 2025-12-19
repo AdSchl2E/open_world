@@ -18,16 +18,17 @@ class ServiceHandler {
     final positionTracker = PositionTracker();
 
     // CRITICAL: Call setForegroundNotificationInfo IMMEDIATELY (within 5 seconds)
+    // Use flutter_local_notifications for custom icon notification
     if (service is AndroidServiceInstance) {
+      // First set a temporary foreground notification
       await service.setForegroundNotificationInfo(
-        title: 'Exploration in progress',
-        content: 'Tracking your movements...',
+        title: 'Starting...',
+        content: 'Initializing tracking',
       );
     }
 
-    // Initialize notifications after startForeground
-    await notificationManager.initialize();
-    await notificationManager.createChannel();
+    // Show the actual notification with custom icon using flutter_local_notifications
+    // This was initialized in the main isolate at app startup
     await notificationManager.showTrackingNotification();
 
     // Service running flag
