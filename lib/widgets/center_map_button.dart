@@ -16,7 +16,7 @@ class CenterMapButton extends StatelessWidget {
     return FloatingActionButton(
       heroTag: 'center',
       onPressed: onPressed,
-      backgroundColor: isDarkTheme ? Colors.grey[850] : Colors.white,
+      backgroundColor: isDarkTheme ? Colors.black87 : Colors.white,
       child: Icon(
         Icons.my_location,
         color: isDarkTheme ? Colors.white : Colors.blue,

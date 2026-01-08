@@ -11,17 +11,19 @@ class PositionTracker {
   final DatabaseService _databaseService = DatabaseService();
   final LocationService _locationService = LocationService();
   
-  static const double minDistanceBetweenAreas = 500.0; // meters
   List<Map<String, double>> _cachedPositions = [];
+  double _currentRadius = ExploredArea.defaultRadius;
 
   /// Checks if GPS permissions are granted (without requesting)
   Future<bool> hasPermissions({bool requestIfNeeded = true}) async {
     return await _locationService.checkPermissions(requestIfNeeded: requestIfNeeded);
   }
 
-  /// Loads cached positions from SharedPreferences
+  /// Loads cached positions and current radius from SharedPreferences
   Future<void> _loadCachedPositions() async {
     final prefs = await SharedPreferences.getInstance();
+    _currentRadius = prefs.getDouble('zone_radius') ?? ExploredArea.defaultRadius;
+    
     final keys = prefs.getKeys().where((k) => k.startsWith('cached_pos_'));
     
     _cachedPositions.clear();
@@ -32,7 +34,7 @@ class PositionTracker {
         _cachedPositions.add({'lat': lat, 'lon': lon});
       }
     }
-    print('📦 Loaded ${_cachedPositions.length} cached positions');
+    print('📦 Loaded ${_cachedPositions.length} cached positions, radius: ${_currentRadius}m');
   }
 
   /// Starts listening to position changes and saves new areas
@@ -44,7 +46,7 @@ class PositionTracker {
     // Load cached positions on start
     _loadCachedPositions();
 
-    return _locationService.getPositionStream().listen(
+    return _locationService.getPositionStream(radius: _currentRadius).listen(
       (Position position) async {
         if (await _isNewArea(position, isBackgroundMode)) {
           if (isBackgroundMode) {
@@ -54,11 +56,12 @@ class PositionTracker {
               position.longitude,
             );
           } else {
-            // In foreground: save directly to database
+            // In foreground: save directly to database with current radius
             await _databaseService.insertExploredArea(
               ExploredArea(
                 latitude: position.latitude,
                 longitude: position.longitude,
+                radius: _currentRadius,
               ),
             );
           }
@@ -71,6 +74,8 @@ class PositionTracker {
 
   /// Checks if a position represents a new exploration area
   Future<bool> _isNewArea(Position position, bool isBackgroundMode) async {
+    final minDistance = _currentRadius * 0.5; // Half the radius for overlap check
+    
     // Check against cached positions first (faster)
     for (var cached in _cachedPositions) {
       double distance = Geolocator.distanceBetween(
@@ -80,7 +85,7 @@ class PositionTracker {
         cached['lon']!,
       );
 
-      if (distance < minDistanceBetweenAreas) {
+      if (distance < minDistance) {
         return false;
       }
     }
@@ -97,7 +102,9 @@ class PositionTracker {
             area.longitude,
           );
 
-          if (distance < minDistanceBetweenAreas) {
+          // Use the larger radius for overlap check
+          final checkRadius = area.radius > _currentRadius ? area.radius : _currentRadius;
+          if (distance < checkRadius * 0.5) {
             return false;
           }
         }

@@ -20,23 +20,29 @@ class DatabaseService {
     print('💾 Database: $path');
     return await openDatabase(
       path,
-      version: 2, // Incrémenté pour migration
+      version: 3, // Incrémenté pour migration radius
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE explored_areas (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             latitude REAL NOT NULL,
             longitude REAL NOT NULL,
-            timestamp TEXT NOT NULL
+            timestamp TEXT NOT NULL,
+            radius REAL DEFAULT 20.0
           )
         ''');
-        print('✨ Table explored_areas created (without radius column)');
+        print('✨ Table explored_areas created (with radius column)');
       },
       onUpgrade: (db, oldVersion, newVersion) async {
-        if (oldVersion < 2) {
-          // Migration: supprimer la colonne radius si elle existe
-          print('🔄 Migration v$oldVersion -> v$newVersion: removing radius column');
-          await db.execute('ALTER TABLE explored_areas DROP COLUMN radius');
+        if (oldVersion < 3) {
+          // Migration: ajouter la colonne radius avec défaut 1000m pour anciennes zones
+          print('🔄 Migration v$oldVersion -> v$newVersion: adding radius column');
+          try {
+            await db.execute('ALTER TABLE explored_areas ADD COLUMN radius REAL DEFAULT 1000.0');
+            print('✅ Radius column added (existing zones get 1000m)');
+          } catch (e) {
+            print('⚠️ Column might already exist: $e');
+          }
         }
       },
     );

@@ -9,7 +9,7 @@ class FogOfWarPainter extends CustomPainter {
   final List<ExploredArea> exploredAreas;
   final bool isDarkTheme;
   final Position? playerPosition;
-  final double displayRadius;
+  final double currentRadius; // Radius pour la position actuelle (nouveau zones)
   final double mapZoom;
   final LatLng mapCenter;
 
@@ -17,7 +17,7 @@ class FogOfWarPainter extends CustomPainter {
     required this.exploredAreas,
     this.isDarkTheme = true,
     this.playerPosition,
-    this.displayRadius = 1000.0,
+    this.currentRadius = 20.0, // Default pour nouvelles zones
     this.mapZoom = 14.0,
     required this.mapCenter,
   });
@@ -27,11 +27,12 @@ class FogOfWarPainter extends CustomPainter {
     // Dessiner le fog avec un effet de bords doux et nuageux
     canvas.saveLayer(Rect.fromLTWH(0, 0, size.width, size.height), Paint());
     
-    // Fond sombre ou blanc sur toute la surface avec opacité
+    // Fond sombre sur toute la surface avec opacité
+    // Mode clair: gris foncé (un peu plus clair que le mode sombre)
     final fogPaint = Paint()
       ..color = isDarkTheme 
           ? Colors.black.withOpacity(0.75)
-          : Colors.white.withOpacity(0.75);
+          : const Color(0xFF3A3A3A).withOpacity(0.70); // Gris foncé
     
     canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), fogPaint);
 
@@ -44,18 +45,26 @@ class FogOfWarPainter extends CustomPainter {
     
     // Calculer les seuils pour adapter la taille des zones au dézoom
     final minRadiusPixels = size.width * 0.001;
-    final minRadiusPixels2 = minRadiusPixels / 3.0; // 3 fois plus petit
+    final minRadiusPixels2 = minRadiusPixels / 5.0; // 5 fois plus petit (niveau régional)
+    final minRadiusPixels3 = minRadiusPixels / 20.0; // 20 fois plus petit (niveau pays)
+    final minRadiusPixels4 = minRadiusPixels / 100.0; // 100 fois plus petit (niveau continent)
     
     // Ajouter toutes les zones explorées (avec culling optimisé)
     for (final area in exploredAreas) {
       final areaLatLng = LatLng(area.latitude, area.longitude);
       final point = _latLngToScreenPoint(areaLatLng, mapCenter, mapZoom, size);
       
-      // Culling: ignorer les zones hors écran
-      double radiusPixels = _metersToPixels(displayRadius, area.latitude, mapZoom);
+      // Utiliser le radius stocké dans chaque zone
+      double radiusPixels = _metersToPixels(area.radius, area.latitude, mapZoom);
       
-      // Adaptation de la taille selon le niveau de zoom
-      if (radiusPixels < minRadiusPixels2) {
+      // Adaptation de la taille selon le niveau de zoom (4 seuils)
+      if (radiusPixels < minRadiusPixels4) {
+        // Très très très petit (niveau continent): multiplier par 1000
+        radiusPixels *= 1000.0;
+      } else if (radiusPixels < minRadiusPixels3) {
+        // Très très petit (niveau pays): multiplier par 200
+        radiusPixels *= 200.0;
+      } else if (radiusPixels < minRadiusPixels2) {
         // Très petit: multiplier par 50
         radiusPixels *= 50.0;
       } else if (radiusPixels < minRadiusPixels) {
@@ -80,7 +89,8 @@ class FogOfWarPainter extends CustomPainter {
           area.latitude,
           area.longitude,
         );
-        if (distance < 500.0) {
+        // Utiliser le radius de la zone pour la comparaison
+        if (distance < area.radius * 0.5) {
           isAlreadyCovered = true;
           break;
         }
@@ -90,10 +100,15 @@ class FogOfWarPainter extends CustomPainter {
       if (!isAlreadyCovered) {
         final playerLatLng = LatLng(playerPosition!.latitude, playerPosition!.longitude);
         final point = _latLngToScreenPoint(playerLatLng, mapCenter, mapZoom, size);
-        double radiusPixels = _metersToPixels(displayRadius, playerPosition!.latitude, mapZoom);
+        // Utiliser currentRadius pour la position actuelle (nouvelles zones)
+        double radiusPixels = _metersToPixels(currentRadius, playerPosition!.latitude, mapZoom);
         
         // Adaptation de la taille selon le niveau de zoom
-        if (radiusPixels < minRadiusPixels2) {
+        if (radiusPixels < minRadiusPixels4) {
+          radiusPixels *= 1000.0;
+        } else if (radiusPixels < minRadiusPixels3) {
+          radiusPixels *= 200.0;
+        } else if (radiusPixels < minRadiusPixels2) {
           radiusPixels *= 5.0;
         } else if (radiusPixels < minRadiusPixels) {
           radiusPixels *= 2.0;
@@ -190,7 +205,7 @@ class FogOfWarPainter extends CustomPainter {
     return exploredAreas.length != oldDelegate.exploredAreas.length ||
            isDarkTheme != oldDelegate.isDarkTheme ||
            positionChanged ||
-           displayRadius != oldDelegate.displayRadius ||
+           currentRadius != oldDelegate.currentRadius ||
            mapZoom != oldDelegate.mapZoom ||
            mapCenter.latitude != oldDelegate.mapCenter.latitude ||
            mapCenter.longitude != oldDelegate.mapCenter.longitude;
@@ -202,7 +217,7 @@ class FogOfWarOverlay extends StatelessWidget {
   final List<ExploredArea> exploredAreas;
   final bool isDarkTheme;
   final Position? playerPosition;
-  final double displayRadius;
+  final double currentRadius;
   final double mapZoom;
   final LatLng mapCenter;
 
@@ -211,7 +226,7 @@ class FogOfWarOverlay extends StatelessWidget {
     required this.exploredAreas,
     this.isDarkTheme = true,
     this.playerPosition,
-    this.displayRadius = 1000.0,
+    this.currentRadius = 20.0,
     this.mapZoom = 14.0,
     required this.mapCenter,
   });
@@ -223,7 +238,7 @@ class FogOfWarOverlay extends StatelessWidget {
         exploredAreas: exploredAreas,
         isDarkTheme: isDarkTheme,
         playerPosition: playerPosition,
-        displayRadius: displayRadius,
+        currentRadius: currentRadius,
         mapZoom: mapZoom,
         mapCenter: mapCenter,
       ),

@@ -28,8 +28,10 @@ class BackgroundTrackingService {
       final pending = await BackgroundStorage.getPendingPositions();
       print('🔄 Syncing ${pending.length} background positions to database');
       
-      // Charger les zones existantes pour vérification
+      // Charger les zones existantes et le radius actuel
       final existingAreas = await _databaseService.getAllExploredAreas();
+      final prefs = await SharedPreferences.getInstance();
+      final currentRadius = prefs.getDouble('zone_radius') ?? ExploredArea.defaultRadius;
       
       int added = 0;
       int skipped = 0;
@@ -43,7 +45,9 @@ class BackgroundTrackingService {
           bool isAlreadyCovered = false;
           for (var area in existingAreas) {
             final distance = _calculateDistance(lat, lon, area.latitude, area.longitude);
-            if (distance < 500.0) {
+            // Utiliser le max entre le radius de la zone existante et le nouveau
+            final checkRadius = area.radius > currentRadius ? area.radius : currentRadius;
+            if (distance < checkRadius * 0.5) {
               isAlreadyCovered = true;
               skipped++;
               break;
@@ -52,11 +56,10 @@ class BackgroundTrackingService {
           
           // Ajouter uniquement si pas déjà couvert
           if (!isAlreadyCovered) {
-            await _databaseService.insertExploredArea(
-              ExploredArea(latitude: lat, longitude: lon),
-            );
+            final newArea = ExploredArea(latitude: lat, longitude: lon, radius: currentRadius);
+            await _databaseService.insertExploredArea(newArea);
             // Ajouter à la liste locale pour les vérifications suivantes
-            existingAreas.add(ExploredArea(latitude: lat, longitude: lon));
+            existingAreas.add(newArea);
             added++;
           }
         } catch (e) {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import '../services/location_service.dart';
 import '../services/database_service.dart';
@@ -32,6 +33,9 @@ class _MapScreenState extends State<MapScreen> {
   double _explorationPercentage = 0.0;
   int _currentTab = 1; // 0: Settings, 1: Map, 2: Stats
   bool _isDarkFog = true;
+  double _currentRadius = ExploredArea.defaultRadius; // Zone radius preference
+  bool _waitingForGps = false; // True when GPS is not available yet
+  String? _gpsErrorMessage; // Error message to show user
   
   // Google Maps camera state
   LatLng _mapCenter = const LatLng(48.8566, 2.3522); // Paris default
@@ -44,15 +48,41 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   Future<void> _initializeApp() async {
+    // Load preferences
+    final prefs = await SharedPreferences.getInstance();
+    _currentRadius = prefs.getDouble('zone_radius') ?? ExploredArea.defaultRadius;
+    print('📏 Zone radius loaded: ${_currentRadius}m');
+    
     // Load explored areas from database
     _exploredAreas = await _databaseService.getAllExploredAreas();
     print('🗺️ Explored areas loaded: ${_exploredAreas.length}');
+    
+    // Calculate exploration percentage
+    _explorationPercentage = ExplorationCalculator.calculateExplorationPercentage(_exploredAreas.length);
+    
+    // Check if location service is enabled
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      setState(() {
+        _isLoading = false;
+        _waitingForGps = true;
+        _gpsErrorMessage = 'Location service is disabled. Please enable GPS in your device settings.';
+      });
+      // Still start tracking - it will work when GPS becomes available
+      _startLocationTracking();
+      _startGpsCheckTimer();
+      return;
+    }
     
     // Check permissions
     bool hasPermission = await _locationService.checkPermissions();
     if (!hasPermission) {
       _showPermissionDialog();
-      setState(() => _isLoading = false);
+      setState(() {
+        _isLoading = false;
+        _waitingForGps = true;
+        _gpsErrorMessage = 'Location permission denied. Please grant permission in settings.';
+      });
       return;
     }
 
@@ -71,24 +101,107 @@ class _MapScreenState extends State<MapScreen> {
       setState(() {
         _currentPosition = position;
         _isLoading = false;
+        _waitingForGps = false;
+        _gpsErrorMessage = null;
       });
+      _centerMapOnPosition(position);
     } else {
-      setState(() => _isLoading = false);
+      // Use last known position from explored areas
+      _centerOnLastKnownPosition();
+      setState(() {
+        _isLoading = false;
+        _waitingForGps = true;
+        _gpsErrorMessage = 'Waiting for GPS signal...';
+      });
     }
 
     // Start tracking
     _startLocationTracking();
   }
-
-  void _startLocationTracking() {
-    _positionStreamSubscription = _locationService.getPositionStream().listen((position) {
-      setState(() => _currentPosition = position);
-      _checkAndAddNewArea(position);
+  
+  Timer? _gpsCheckTimer;
+  
+  void _startGpsCheckTimer() {
+    _gpsCheckTimer?.cancel();
+    _gpsCheckTimer = Timer.periodic(const Duration(seconds: 5), (_) async {
+      if (!_waitingForGps) {
+        _gpsCheckTimer?.cancel();
+        return;
+      }
+      
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (serviceEnabled) {
+        bool hasPermission = await _locationService.checkPermissions();
+        if (hasPermission) {
+          _gpsCheckTimer?.cancel();
+          await BackgroundTrackingService().startTrackingIfEnabled();
+          Position? position = await _locationService.getCurrentPosition();
+          if (position != null) {
+            setState(() {
+              _currentPosition = position;
+              _waitingForGps = false;
+              _gpsErrorMessage = null;
+            });
+            _centerMapOnPosition(position);
+            _checkAndAddNewArea(position);
+          }
+        }
+      }
     });
   }
 
+  void _startLocationTracking() {
+    _positionStreamSubscription?.cancel();
+    _positionStreamSubscription = _locationService.getPositionStream(radius: _currentRadius).listen(
+      (position) {
+        final wasWaiting = _waitingForGps;
+        setState(() {
+          _currentPosition = position;
+          _waitingForGps = false;
+          _gpsErrorMessage = null;
+        });
+        // Center map when GPS signal is recovered
+        if (wasWaiting) {
+          _centerMapOnPosition(position);
+        }
+        _checkAndAddNewArea(position);
+      },
+      onError: (error) {
+        print('📍 GPS Error: $error');
+        setState(() {
+          _waitingForGps = true;
+          _gpsErrorMessage = 'GPS signal lost. Waiting for signal...';
+        });
+      },
+    );
+  }
+
+  void _centerMapOnPosition(Position position) {
+    if (_mapController != null) {
+      _mapController!.animateCamera(
+        CameraUpdate.newLatLngZoom(
+          LatLng(position.latitude, position.longitude),
+          17.0,
+        ),
+      );
+    }
+  }
+
+  void _centerOnLastKnownPosition() {
+    if (_exploredAreas.isNotEmpty && _mapController != null) {
+      // Get the most recent explored area
+      final lastArea = _exploredAreas.last;
+      _mapController!.animateCamera(
+        CameraUpdate.newLatLngZoom(
+          LatLng(lastArea.latitude, lastArea.longitude),
+          17.0,
+        ),
+      );
+    }
+  }
+
   void _checkAndAddNewArea(Position position) {
-    if (ExplorationCalculator.isNewArea(position, _exploredAreas)) {
+    if (ExplorationCalculator.isNewArea(position, _exploredAreas, radius: _currentRadius)) {
       print('🆕 New zone to add!');
       _addExploredArea(position);
     }
@@ -98,9 +211,10 @@ class _MapScreenState extends State<MapScreen> {
     ExploredArea newArea = ExploredArea(
       latitude: position.latitude,
       longitude: position.longitude,
+      radius: _currentRadius, // Use current radius preference
     );
     
-    print('✅ New explored area added: ${position.latitude}, ${position.longitude}, radius: 1000m');
+    print('✅ New explored area added: ${position.latitude}, ${position.longitude}, radius: ${_currentRadius}m');
     
     await _databaseService.insertExploredArea(newArea);
     setState(() {
@@ -109,6 +223,16 @@ class _MapScreenState extends State<MapScreen> {
     });
     
     print('📊 Total explored zones: ${_exploredAreas.length}');
+  }
+
+  void _onRadiusChanged(double newRadius) {
+    setState(() {
+      _currentRadius = newRadius;
+    });
+    // Restart tracking with new distance filter
+    _positionStreamSubscription?.cancel();
+    _startLocationTracking();
+    print('📏 Radius changed to: ${newRadius}m, tracking restarted');
   }
 
   void _showPermissionDialog() {
@@ -158,6 +282,7 @@ class _MapScreenState extends State<MapScreen> {
                   _isDarkFog = isDark;
                 });
               },
+              onRadiusChanged: _onRadiusChanged,
               onDataChanged: () async {
                 final areas = await _databaseService.getAllExploredAreas();
                 setState(() {
@@ -172,6 +297,9 @@ class _MapScreenState extends State<MapScreen> {
               exploredAreas: _exploredAreas,
               explorationPercentage: _explorationPercentage,
               isDarkFog: _isDarkFog,
+              currentRadius: _currentRadius,
+              waitingForGps: _waitingForGps,
+              gpsErrorMessage: _gpsErrorMessage,
               onMapCreated: (controller) => _mapController = controller,
               onCameraMove: (position) {
                 setState(() {
@@ -184,7 +312,7 @@ class _MapScreenState extends State<MapScreen> {
                   _mapController!.animateCamera(
                     CameraUpdate.newLatLngZoom(
                       LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
-                      14.0,
+                      17.0, // Higher zoom for smaller default radius
                     ),
                   );
                 }

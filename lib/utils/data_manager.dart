@@ -68,6 +68,7 @@ class DataManager {
       latitude: zoneData['latitude'] as double,
       longitude: zoneData['longitude'] as double,
       timestamp: DateTime.parse(zoneData['timestamp'] as String),
+      radius: (zoneData['radius'] as num?)?.toDouble(),
     );
   }
 }

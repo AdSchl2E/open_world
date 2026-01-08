@@ -17,7 +17,10 @@ class ExplorationCalculator {
   }
 
   /// Check if a position is in a new area (not already explored)
-  static bool isNewArea(Position position, List<ExploredArea> exploredAreas) {
+  /// [radius] is the radius for new zones (used for overlap calculation)
+  static bool isNewArea(Position position, List<ExploredArea> exploredAreas, {double? radius}) {
+    final newZoneRadius = radius ?? ExploredArea.defaultRadius;
+    
     for (var area in exploredAreas) {
       double distance = _locationService.calculateDistance(
         position.latitude,
@@ -26,10 +29,14 @@ class ExplorationCalculator {
         area.longitude,
       );
 
-      // If the new position is less than half the radius of an existing zone,
+      // Use the larger of the two radii for overlap check
+      // This ensures we don't add a small zone that would be covered by a large existing zone
+      final checkRadius = area.radius > newZoneRadius ? area.radius : newZoneRadius;
+      
+      // If the new position is less than half the check radius,
       // we consider it already explored (to avoid too much overlap)
-      if (distance < area.radius * 0.5) {
-        print('! Zone already explored (distance: ${distance.toStringAsFixed(1)}m < ${(area.radius * 0.5).toStringAsFixed(1)}m)');
+      if (distance < checkRadius * 0.5) {
+        print('! Zone already explored (distance: ${distance.toStringAsFixed(1)}m < ${(checkRadius * 0.5).toStringAsFixed(1)}m)');
         return false;
       }
     }

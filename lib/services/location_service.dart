@@ -1,4 +1,6 @@
 import 'package:geolocator/geolocator.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../models/explored_area.dart';
 
 class LocationService {
   static final LocationService _instance = LocationService._internal();
@@ -43,11 +45,29 @@ class LocationService {
     }
   }
 
-  Stream<Position> getPositionStream() {
+  /// Get the current zone radius preference
+  Future<double> getCurrentRadius() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getDouble('zone_radius') ?? ExploredArea.defaultRadius;
+  }
+
+  /// Calculate appropriate distance filter based on radius
+  /// (half the radius to ensure good coverage)
+  int _calculateDistanceFilter(double radius) {
+    return (radius / 2).clamp(5, 100).toInt();
+  }
+
+  Stream<Position> getPositionStream({double? radius}) {
+    // Use provided radius or default
+    final effectiveRadius = radius ?? ExploredArea.defaultRadius;
+    final distanceFilter = _calculateDistanceFilter(effectiveRadius);
+    
+    print('📍 Position stream: radius=${effectiveRadius}m, distanceFilter=${distanceFilter}m');
+    
     return Geolocator.getPositionStream(
-      locationSettings: const LocationSettings(
+      locationSettings: LocationSettings(
         accuracy: LocationAccuracy.high,
-        distanceFilter: 50, // Update every 50 meters (better battery)
+        distanceFilter: distanceFilter,
         // No timeLimit: tracking continu sans timeout
       ),
     );

@@ -8,12 +8,14 @@ import '../widgets/background_tracking_card.dart';
 import '../widgets/setting_card.dart';
 import '../widgets/section_title.dart';
 import '../widgets/delete_data_dialog.dart';
+import '../widgets/zone_radius_card.dart';
 
 class SettingsScreen extends StatefulWidget {
   final List<ExploredArea> exploredAreas;
   final Function() onDataChanged;
   final bool isDarkFog;
   final Function(bool) onFogThemeChanged;
+  final Function(double)? onRadiusChanged;
 
   const SettingsScreen({
     super.key,
@@ -21,6 +23,7 @@ class SettingsScreen extends StatefulWidget {
     required this.onDataChanged,
     required this.isDarkFog,
     required this.onFogThemeChanged,
+    this.onRadiusChanged,
   });
 
   @override
@@ -45,6 +48,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           // Exploration section
           SectionTitle(title: 'Exploration', isDarkFog: widget.isDarkFog),
+          ZoneRadiusCard(
+            isDarkFog: widget.isDarkFog,
+            onRadiusChanged: widget.onRadiusChanged,
+          ),
+          const SizedBox(height: 12),
           FogThemeCard(
             isDarkFog: widget.isDarkFog,
             onThemeChanged: widget.onFogThemeChanged,

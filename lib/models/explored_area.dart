@@ -3,16 +3,19 @@ class ExploredArea {
   final double latitude;
   final double longitude;
   final DateTime timestamp;
+  final double radius; // Rayon en mètres, stocké en BD
 
-  // Le rayon n'est plus stocké en BD, toujours 1000m
-  double get radius => 1000.0;
+  // Rayon par défaut pour les nouvelles zones (20m)
+  static const double defaultRadius = 20.0;
 
   ExploredArea({
     this.id,
     required this.latitude,
     required this.longitude,
     DateTime? timestamp,
-  }) : timestamp = timestamp ?? DateTime.now();
+    double? radius,
+  }) : timestamp = timestamp ?? DateTime.now(),
+       radius = radius ?? defaultRadius;
 
   Map<String, dynamic> toJson() {
     return {
@@ -20,6 +23,7 @@ class ExploredArea {
       'latitude': latitude,
       'longitude': longitude,
       'timestamp': timestamp.toIso8601String(),
+      'radius': radius,
     };
   }
 
@@ -29,6 +33,7 @@ class ExploredArea {
       latitude: json['latitude'],
       longitude: json['longitude'],
       timestamp: DateTime.parse(json['timestamp']),
+      radius: (json['radius'] as num?)?.toDouble() ?? defaultRadius,
     );
   }
 
@@ -38,6 +43,7 @@ class ExploredArea {
       'latitude': latitude,
       'longitude': longitude,
       'timestamp': timestamp.toIso8601String(),
+      'radius': radius,
     };
   }
 
@@ -47,6 +53,7 @@ class ExploredArea {
       latitude: map['latitude'],
       longitude: map['longitude'],
       timestamp: DateTime.parse(map['timestamp']),
+      radius: (map['radius'] as num?)?.toDouble() ?? defaultRadius,
     );
   }
 }
