@@ -86,7 +86,6 @@ class _MapScreenState extends State<MapScreen> {
       return;
     }
 
-    // ✅ CRITICAL: Start background tracking after permissions are granted
     // This ensures tracking starts automatically on first launch
     await BackgroundTrackingService().startTrackingIfEnabled();
 

@@ -3,9 +3,8 @@ class ExploredArea {
   final double latitude;
   final double longitude;
   final DateTime timestamp;
-  final double radius; // Rayon en mètres, stocké en BD
+  final double radius;
 
-  // Rayon par défaut pour les nouvelles zones (20m)
   static const double defaultRadius = 20.0;
 
   ExploredArea({

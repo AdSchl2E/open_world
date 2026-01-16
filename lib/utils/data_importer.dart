@@ -7,7 +7,7 @@ import '../utils/app_notifications.dart';
 import '../utils/data_manager.dart';
 import '../utils/geo_utils.dart';
 
-/// Handles data import operations
+// Handles data import operations
 class DataImporter {
   final BuildContext context;
   final List<ExploredArea> exploredAreas;
@@ -23,7 +23,7 @@ class DataImporter {
     required this.isDarkFog,
   });
 
-  /// Import data from JSON file
+  // Import data from JSON file
   Future<void> importData() async {
     try {
       // Select a JSON file
@@ -69,7 +69,7 @@ class DataImporter {
     }
   }
 
-  /// Show confirmation dialog for import
+  // Show confirmation dialog for import
   Future<bool?> _showImportConfirmDialog(int zonesCount) {
     return showDialog<bool>(
       context: context,
@@ -97,7 +97,7 @@ class DataImporter {
     );
   }
 
-  /// Import zones and return statistics
+  // Import zones and return statistics
   Future<ImportResult> _importZones(List<Map<String, dynamic>> zones) async {
     int importedCount = 0;
     int skippedCount = 0;
@@ -131,7 +131,7 @@ class DataImporter {
   }
 }
 
-/// Result of import operation
+// Result of import operation
 class ImportResult {
   final int imported;
   final int skipped;

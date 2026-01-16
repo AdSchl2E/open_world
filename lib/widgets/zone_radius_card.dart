@@ -196,7 +196,7 @@ class _ZoneRadiusCardState extends State<ZoneRadiusCard> {
     );
   }
 
-  /// Static method to get current radius from SharedPreferences
+  // Static method to get current radius from SharedPreferences
   static Future<double> getCurrentRadius() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getDouble(_prefKey) ?? ExploredArea.defaultRadius;

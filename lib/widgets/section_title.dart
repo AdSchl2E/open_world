@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Section title for settings groups
+// Section title for settings groups
 class SectionTitle extends StatelessWidget {
   final String title;
   final bool isDarkFog;

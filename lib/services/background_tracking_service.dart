@@ -5,8 +5,8 @@ import 'background_tracking/background_storage.dart';
 import 'database_service.dart';
 import '../models/explored_area.dart';
 
-/// Main service for GPS background tracking
-/// Uses Android foreground service with persistent notification
+// Main service for GPS background tracking
+// Uses Android foreground service with persistent notification
 class BackgroundTrackingService {
   static final BackgroundTrackingService _instance = BackgroundTrackingService._();
   factory BackgroundTrackingService() => _instance;
@@ -15,20 +15,20 @@ class BackgroundTrackingService {
   final ServiceConfiguration _serviceConfig = ServiceConfiguration();
   final DatabaseService _databaseService = DatabaseService();
 
-  /// Initializes the background service
+  // Initializes the background service
   Future<void> initialize() async {
     await _serviceConfig.initialize();
     // Sync any pending positions from background
     await syncPendingPositions();
   }
 
-  /// Syncs pending positions from background to database
+  // Syncs pending positions from background to database
   Future<void> syncPendingPositions() async {
     if (await BackgroundStorage.hasPendingPositions()) {
       final pending = await BackgroundStorage.getPendingPositions();
       print('🔄 Syncing ${pending.length} background positions to database');
       
-      // Charger les zones existantes et le radius actuel
+      // Get existing explored areas and current radius
       final existingAreas = await _databaseService.getAllExploredAreas();
       final prefs = await SharedPreferences.getInstance();
       final currentRadius = prefs.getDouble('zone_radius') ?? ExploredArea.defaultRadius;
@@ -41,7 +41,7 @@ class BackgroundTrackingService {
           final lat = pos['latitude'] as double;
           final lon = pos['longitude'] as double;
           
-          // Vérifier si déjà couvert par une zone existante
+          // Check if already covered by existing areas
           bool isAlreadyCovered = false;
           for (var area in existingAreas) {
             final distance = _calculateDistance(lat, lon, area.latitude, area.longitude);
@@ -54,16 +54,17 @@ class BackgroundTrackingService {
             }
           }
           
-          // Ajouter uniquement si pas déjà couvert
+          // Add only if not already covered
           if (!isAlreadyCovered) {
             final newArea = ExploredArea(latitude: lat, longitude: lon, radius: currentRadius);
             await _databaseService.insertExploredArea(newArea);
-            // Ajouter à la liste locale pour les vérifications suivantes
+            // Add to local list for subsequent checks
             existingAreas.add(newArea);
             added++;
           }
         } catch (e) {
-          print('⚠️ Error syncing position: $e');
+          print('⚠️ Error processing position: $e');
+          skipped++;
         }
       }
       
@@ -87,7 +88,7 @@ class BackgroundTrackingService {
     return earthRadius * c;
   }
 
-  /// Starts tracking automatically if user had enabled it
+  // Starts tracking automatically if user had enabled it
   Future<void> startTrackingIfEnabled() async {
     final prefs = await SharedPreferences.getInstance();
     final isEnabled = prefs.getBool('background_tracking_enabled') ?? true;
@@ -105,21 +106,21 @@ class BackgroundTrackingService {
     }
   }
 
-  /// Starts background tracking
+  // Starts background tracking
   Future<void> startTracking() async {
     await _serviceConfig.startService();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('tracking_active', true);
   }
 
-  /// Stops background tracking
+  // Stops background tracking
   Future<void> stopTracking() async {
     await _serviceConfig.stopService();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('tracking_active', false);
   }
 
-  /// Checks if tracking is currently active
+  // Checks if tracking is currently active
   Future<bool> isTrackingActive() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool('tracking_active') ?? false;

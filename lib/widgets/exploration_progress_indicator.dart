@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Shows the exploration percentage on the map
+// Shows the exploration percentage on the map
 class ExplorationProgressIndicator extends StatelessWidget {
   final double explorationPercentage;
   final bool isDarkTheme;

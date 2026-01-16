@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Navigation bar with three tabs: Settings, Map, Stats
+// Navigation bar with three tabs: Settings, Map, Stats
 class FloatingNavBar extends StatelessWidget {
   final int currentTab;
   final Function(int) onTabChanged;

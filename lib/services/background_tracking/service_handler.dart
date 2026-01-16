@@ -5,10 +5,10 @@ import 'package:geolocator/geolocator.dart';
 import 'notification_manager.dart';
 import 'position_tracker.dart';
 
-/// Handles the background service execution and lifecycle
+// Handles the background service execution and lifecycle
 @pragma('vm:entry-point')
 class ServiceHandler {
-  /// Main entry point for the background service
+  // Main entry point for the background service
   @pragma('vm:entry-point')
   static void onStart(ServiceInstance service) async {
     print('🚀 Background service started');
@@ -67,7 +67,7 @@ class ServiceHandler {
     }
   }
 
-  /// iOS background callback (required but not used)
+  // iOS background callback (required but not used)
   @pragma('vm:entry-point')
   static Future<bool> onIosBackground(ServiceInstance service) async {
     return true;

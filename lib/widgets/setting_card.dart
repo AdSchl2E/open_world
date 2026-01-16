@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Generic setting card with icon, title, subtitle and optional trailing widget
+// Generic setting card with icon, title, subtitle and optional trailing widget
 class SettingCard extends StatelessWidget {
   final IconData icon;
   final String title;

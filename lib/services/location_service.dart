@@ -45,14 +45,14 @@ class LocationService {
     }
   }
 
-  /// Get the current zone radius preference
+  // Get the current zone radius preference
   Future<double> getCurrentRadius() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getDouble('zone_radius') ?? ExploredArea.defaultRadius;
   }
 
-  /// Calculate appropriate distance filter based on radius
-  /// (half the radius to ensure good coverage)
+  // Calculate appropriate distance filter based on radius
+  // (half the radius to ensure good coverage)
   int _calculateDistanceFilter(double radius) {
     return (radius / 2).clamp(5, 100).toInt();
   }

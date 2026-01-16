@@ -2,19 +2,19 @@ import 'package:flutter_background_service/flutter_background_service.dart';
 import 'notification_manager.dart';
 import 'service_handler.dart';
 
-/// Configures and manages the background service lifecycle
+// Configures and manages the background service lifecycle
 class ServiceConfiguration {
   final NotificationManager _notificationManager = NotificationManager();
 
   bool _isConfigured = false;
 
-  /// Initializes notification channel (lightweight, no service start)
+  // Initializes notification channel (lightweight, no service start)
   Future<void> initialize() async {
     // Only create notification channel, don't configure service yet
     await _notificationManager.createChannel();
   }
 
-  /// Configures the background service (call this before first start)
+  // Configures the background service (call this before first start)
   Future<void> _ensureConfigured() async {
     if (_isConfigured) return;
 
@@ -44,7 +44,7 @@ class ServiceConfiguration {
     _isConfigured = true;
   }
 
-  /// Starts the background tracking service
+  // Starts the background tracking service
   Future<void> startService() async {
     if (await _notificationManager.requestPermission()) {
       // Ensure service is configured before starting
@@ -55,7 +55,7 @@ class ServiceConfiguration {
     }
   }
 
-  /// Stops the background tracking service
+  // Stops the background tracking service
   Future<void> stopService() async {
     final service = FlutterBackgroundService();
     // Use sendData instead of invoke to avoid UI isolate error

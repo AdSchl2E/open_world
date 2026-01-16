@@ -3,7 +3,7 @@ import '../models/explored_area.dart';
 import '../utils/app_notifications.dart';
 import '../utils/data_manager.dart';
 
-/// Handles data export operations
+// Handles data export operations
 class DataExporter {
   final BuildContext context;
   final List<ExploredArea> exploredAreas;
@@ -13,7 +13,7 @@ class DataExporter {
     required this.exploredAreas,
   });
 
-  /// Export data to JSON file
+  // Export data to JSON file
   Future<void> exportData() async {
     try {
       final filePath = await DataManager.exportData(exploredAreas);

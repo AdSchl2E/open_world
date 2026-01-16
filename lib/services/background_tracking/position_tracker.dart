@@ -6,7 +6,7 @@ import '../location_service.dart';
 import '../../models/explored_area.dart';
 import 'background_storage.dart';
 
-/// Tracks GPS position and stores new explored areas
+// Tracks GPS position and stores new explored areas
 class PositionTracker {
   final DatabaseService _databaseService = DatabaseService();
   final LocationService _locationService = LocationService();
@@ -14,12 +14,12 @@ class PositionTracker {
   List<Map<String, double>> _cachedPositions = [];
   double _currentRadius = ExploredArea.defaultRadius;
 
-  /// Checks if GPS permissions are granted (without requesting)
+  // Checks if GPS permissions are granted (without requesting)
   Future<bool> hasPermissions({bool requestIfNeeded = true}) async {
     return await _locationService.checkPermissions(requestIfNeeded: requestIfNeeded);
   }
 
-  /// Loads cached positions and current radius from SharedPreferences
+  // Loads cached positions and current radius from SharedPreferences
   Future<void> _loadCachedPositions() async {
     final prefs = await SharedPreferences.getInstance();
     _currentRadius = prefs.getDouble('zone_radius') ?? ExploredArea.defaultRadius;
@@ -37,7 +37,7 @@ class PositionTracker {
     print('📦 Loaded ${_cachedPositions.length} cached positions, radius: ${_currentRadius}m');
   }
 
-  /// Starts listening to position changes and saves new areas
+  // Starts listening to position changes and saves new areas
   StreamSubscription<Position> startTracking({
     required Function(Position) onNewArea,
     required Function(dynamic) onError,
@@ -72,7 +72,7 @@ class PositionTracker {
     );
   }
 
-  /// Checks if a position represents a new exploration area
+  // Checks if a position represents a new exploration area
   Future<bool> _isNewArea(Position position, bool isBackgroundMode) async {
     final minDistance = _currentRadius * 0.5; // Half the radius for overlap check
     

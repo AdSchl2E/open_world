@@ -6,7 +6,7 @@ import '../widgets/fog_of_war_painter.dart';
 import '../widgets/exploration_progress_indicator.dart';
 import '../widgets/center_map_button.dart';
 
-/// Map view with Google Maps and fog of war overlay
+// Map view with Google Maps and fog of war overlay
 class MapView extends StatelessWidget {
   final Position? currentPosition;
   final List<ExploredArea> exploredAreas;

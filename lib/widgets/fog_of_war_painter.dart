@@ -4,7 +4,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../models/explored_area.dart';
 import 'dart:math' as math;
 
-/// Painter simplifié : fond sombre avec cercles transparents
+// Painter simplifié : fond sombre avec cercles transparents
 class FogOfWarPainter extends CustomPainter {
   final List<ExploredArea> exploredAreas;
   final bool isDarkTheme;
@@ -212,7 +212,7 @@ class FogOfWarPainter extends CustomPainter {
   }
 }
 
-/// Widget wrapper pour le fog of war
+// Widget wrapper pour le fog of war
 class FogOfWarOverlay extends StatelessWidget {
   final List<ExploredArea> exploredAreas;
   final bool isDarkTheme;

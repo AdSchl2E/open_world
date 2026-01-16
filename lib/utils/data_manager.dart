@@ -3,9 +3,9 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import '../models/explored_area.dart';
 
-/// Handles data import/export operations
+// Handles data import/export operations
 class DataManager {
-  /// Export explored areas to JSON file
+  // Export explored areas to JSON file
   static Future<String> exportData(List<ExploredArea> exploredAreas) async {
     // Convert zones to JSON
     final data = {
@@ -49,7 +49,7 @@ class DataManager {
     return file.path;
   }
 
-  /// Parse and validate JSON import data
+  // Parse and validate JSON import data
   static Future<List<Map<String, dynamic>>> parseImportData(File file) async {
     final jsonString = await file.readAsString();
     final data = jsonDecode(jsonString) as Map<String, dynamic>;
@@ -62,7 +62,7 @@ class DataManager {
     return (data['zones'] as List).cast<Map<String, dynamic>>();
   }
 
-  /// Convert JSON zone data to ExploredArea
+  // Convert JSON zone data to ExploredArea
   static ExploredArea zoneFromJson(Map<String, dynamic> zoneData) {
     return ExploredArea(
       latitude: zoneData['latitude'] as double,

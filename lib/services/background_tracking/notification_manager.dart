@@ -1,6 +1,6 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
-/// Manages notifications for background tracking service
+// Manages notifications for background tracking service
 class NotificationManager {
   static const String channelId = 'background_tracking';
   static const String channelName = 'Exploration in progress';
@@ -8,7 +8,7 @@ class NotificationManager {
 
   final FlutterLocalNotificationsPlugin _notifications = FlutterLocalNotificationsPlugin();
 
-  /// Creates the notification channel
+  // Creates the notification channel
   Future<void> createChannel() async {
     const AndroidNotificationChannel channel = AndroidNotificationChannel(
       channelId,
@@ -24,7 +24,7 @@ class NotificationManager {
         ?.createNotificationChannel(channel);
   }
 
-  /// Requests notification permission from user
+  // Requests notification permission from user
   Future<bool> requestPermission() async {
     final androidImpl = _notifications
         .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
@@ -35,7 +35,7 @@ class NotificationManager {
     return true;
   }
 
-  /// Initializes notifications with icon
+  // Initializes notifications with icon
   Future<void> initialize() async {
     const AndroidInitializationSettings androidSettings = 
         AndroidInitializationSettings('@drawable/ic_notification');
@@ -45,7 +45,7 @@ class NotificationManager {
     );
   }
 
-  /// Shows persistent tracking notification
+  // Shows persistent tracking notification
   Future<void> showTrackingNotification() async {
     const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
       channelId,

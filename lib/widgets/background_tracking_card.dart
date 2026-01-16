@@ -4,7 +4,7 @@ import '../services/background_tracking_service.dart';
 import '../utils/app_notifications.dart';
 import 'setting_card.dart';
 
-/// Card to enable/disable background tracking
+// Card to enable/disable background tracking
 class BackgroundTrackingCard extends StatefulWidget {
   final bool isDarkFog;
 

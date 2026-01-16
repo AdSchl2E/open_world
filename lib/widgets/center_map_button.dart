@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Button to center the map on user's current position
+// Button to center the map on user's current position
 class CenterMapButton extends StatelessWidget {
   final VoidCallback onPressed;
   final bool isDarkTheme;

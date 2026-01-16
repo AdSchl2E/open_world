@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Card with theme selection (Dark/Light)
+// Card with theme selection (Dark/Light)
 class FogThemeCard extends StatelessWidget {
   final bool isDarkFog;
   final Function(bool) onThemeChanged;

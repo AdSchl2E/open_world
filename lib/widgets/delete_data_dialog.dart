@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/database_service.dart';
 import '../utils/app_notifications.dart';
 
-/// Confirmation dialog for deleting all data
+// Confirmation dialog for deleting all data
 class DeleteDataDialog {
   final BuildContext context;
   final int zonesCount;
@@ -18,7 +18,7 @@ class DeleteDataDialog {
     required this.isDarkFog,
   });
 
-  /// Show delete confirmation dialog
+  // Show delete confirmation dialog
   void show() {
     showDialog(
       context: context,
@@ -46,7 +46,7 @@ class DeleteDataDialog {
     );
   }
 
-  /// Delete all data and close dialog
+  // Delete all data and close dialog
   Future<void> _deleteAllData() async {
     await databaseService.deleteAllExploredAreas();
     onDataChanged();
