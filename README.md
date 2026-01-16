@@ -1,31 +1,33 @@
-# OpenWorld
+![Open World Logo](assets/icons/openworld_512x512.png)
+# Open World
 
-![Flutter](https://img.shields.io/badge/-Flutter-black?style=flat-circle&logo=flutter)
-![OpenStreetMap](https://img.shields.io/badge/-OpenStreetMap-black?style=flat-circle&logo=openstreetmap)
+![Flutter](https://img.shields.io/badge/Made%20with-Flutter-blue.svg) ![Dart](https://img.shields.io/badge/Language-Dart-blue.svg) ![Google Maps](https://img.shields.io/badge/Maps-Google%20Maps-green.svg) ![SQLite](https://img.shields.io/badge/Database-SQLite-orange.svg)
 
-A Flutter-based exploration tracking app that gamifies real-world exploration through an interactive fog-of-war system on OpenStreetMap.
+Open World is an Android application built with Flutter that tracks GPS movement and visualizes explored areas using a fog of war overlay on Google Maps.
 
-## Overview
+### Features
 
-OpenWorld transforms your everyday movements into an exploration adventure. As you move through the real world, the app reveals areas on the map by clearing procedurally generated cloud textures, creating a unique fog-of-war experience similar to video games.
+- GPS-based exploration tracking
+- Background location tracking
+- Local data storage (SQLite)
+- Fog of war rendering
+- Adjustable exploration radius
+- JSON import/export  
 
-## Features
+### Tech
 
-- **Real-time Location Tracking**: Continuously tracks your position and automatically reveals explored areas
-- **Procedural Cloud System**: Realistic cloud textures using Perlin noise that cover unexplored regions
-- **Exploration Statistics**: Track your progress with detailed stats including covered area, distance traveled, and zones explored
-- **Persistent Data**: All explored areas are stored locally using SQLite
-- **Performance Optimized**: Adaptive rendering based on zoom level, viewport culling, and efficient geometry calculations
+- Flutter / Dart
+- Google Maps API
+- SQLite
 
-## Tech Stack
+### Platform
 
-- **Framework**: Flutter 3.9.2+ / Dart 3.9.2+
-- **Mapping**: flutter_map ^7.0.2 (OpenStreetMap with CartoDB Voyager tiles)
-- **Location Services**: geolocator ^13.0.2
-- **Database**: sqflite ^2.4.1 (SQLite for persistent storage)
-- **Coordinates**: latlong2 ^0.9.2
-- **UI**: Material Design 3 with custom theme support
+Android only (iOS compatible codebase)
 
-## Configuration
+### Data
 
-The app automatically handles permissions for location services. On first run, it will request access to your device's location.
+Fully local storage
+No account, no cloud
+
+### Installation
+You can install the app directly from Github Releases.
