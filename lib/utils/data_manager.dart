@@ -1,11 +1,11 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:path_provider/path_provider.dart';
+import 'package:file_picker/file_picker.dart';
 import '../models/explored_area.dart';
 
 // Handles data import/export operations
 class DataManager {
-  // Export explored areas to JSON file
+  // Export explored areas to JSON file using system file picker
   static Future<String> exportData(List<ExploredArea> exploredAreas) async {
     // Convert zones to JSON
     final data = {
@@ -21,32 +21,37 @@ class DataManager {
     };
 
     final jsonString = const JsonEncoder.withIndent('  ').convert(data);
+    final bytes = utf8.encode(jsonString);
 
-    // Get download directory
-    Directory? directory;
-    if (Platform.isAndroid) {
-      directory = Directory('/storage/emulated/0/Download');
-      if (!await directory.exists()) {
-        directory = await getExternalStorageDirectory();
-      }
-    } else if (Platform.isWindows) {
-      directory = await getDownloadsDirectory();
-    } else {
-      directory = await getApplicationDocumentsDirectory();
-    }
-
-    if (directory == null) {
-      throw Exception('Cannot find download directory');
-    }
-
-    // Create file with unique name
+    // Create default filename
     final timestamp = DateTime.now().toIso8601String().replaceAll(':', '-').split('.')[0];
     final fileName = 'openworld_export_$timestamp.json';
-    final file = File('${directory.path}/$fileName');
 
-    await file.writeAsString(jsonString);
+    // Open system "Save As" dialog - user chooses where to save
+    String? outputPath = await FilePicker.platform.saveFile(
+      dialogTitle: 'Save exploration data',
+      fileName: fileName,
+      type: FileType.custom,
+      allowedExtensions: ['json'],
+      bytes: bytes,
+    );
 
-    return file.path;
+    if (outputPath == null) {
+      throw Exception('Export cancelled');
+    }
+
+    // On some platforms, saveFile doesn't write the file, just returns the path
+    // So we write it manually to be safe
+    if (!outputPath.endsWith('.json')) {
+      outputPath = '$outputPath.json';
+    }
+    
+    final file = File(outputPath);
+    if (!await file.exists()) {
+      await file.writeAsBytes(bytes);
+    }
+
+    return outputPath;
   }
 
   // Parse and validate JSON import data
